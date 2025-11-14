@@ -1,0 +1,38 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  CHROME_BIN: "/usr/bin/google-chrome"
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4
+    wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+    wget https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip
+    unzip chromedriver_linux64.zip
+    sudo mv chromedriver /usr/local/bin/
+  displayName: 'Install Chrome and ChromeDriver'
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install dependencies'
+
+- script: |
+    behave
+  displayName: 'Run Behave Tests'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: 'reports'
+    artifact: 'TestReports'
+    publishLocation: 'pipeline'
